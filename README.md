@@ -232,6 +232,47 @@ alembic upgrade head
 
 ---
 
+## 웹 대시보드 화면 구성
+
+서버 실행 후 `http://localhost:3000` 에 접속하면 사용할 수 있는 전체 화면 목록입니다.
+
+### 공통 화면
+
+| 화면 | 주소 | 설명 |
+|---|---|---|
+| 로그인 | `/login` | 이메일·비밀번호 로그인 |
+| 대시보드 | `/dashboard` | 프로젝트별 요약, 오늘 날씨 경보 |
+| 프로젝트 목록 | `/projects` | 현장 목록, 신규 프로젝트 등록 |
+| 법규 Q&A | `/rag` | 건설 법규·시방서 검색 채팅 |
+| 설정 | `/settings` | 발주처 프로파일, 공종 라이브러리 관리 |
+
+### 프로젝트 내 모듈 (10개 탭)
+
+프로젝트 상세 페이지(`/projects/{id}`)에서 아래 탭으로 이동합니다.
+
+| 탭 | 주소 | 설명 |
+|---|---|---|
+| 📅 공정표 | `/projects/{id}/gantt` | Gantt 차트, CPM 주공정선 시각화 |
+| 📋 일보/보고서 | `/projects/{id}/reports` | 작업일보·주간·월간 보고서 목록, PDF 다운로드 |
+| 🔬 검측 | `/projects/{id}/inspections` | 검측요청서 목록, AI 생성, PDF 출력 |
+| ✅ 품질시험 | `/projects/{id}/quality` | 시험 기록 입력, 합격률 통계 |
+| 🌤 날씨 | `/projects/{id}/weather` | 7일 예보, 활성 경보 목록 |
+| 🏛 인허가 | `/projects/{id}/permits` | 인허가 체크리스트, AI 자동 도출 |
+| 🤖 AI 에이전트 | `/projects/{id}/agents` | GONGSA·PUMJIL·ANJEON·GUMU 채팅, 협업 시나리오 실행, 아침 브리핑 |
+| 📊 EVMS | `/projects/{id}/evms` | SPI·CPI 지수, 공정률 추이 차트, 공기 예측, 기성청구 금액 |
+| 👁 Vision AI | `/projects/{id}/vision` | 공종 분류 / 안전 점검 / 도면 대조 (탭 전환) |
+| 📦 준공도서 | `/projects/{id}/completion` | 준공 준비도 체크리스트, ZIP 패키지 다운로드 |
+
+### 발주처 전용 포털
+
+로그인 없이 접속 가능한 별도 화면입니다. 현장 관리자가 발급한 토큰만 있으면 됩니다.
+
+| 화면 | 주소 | 설명 |
+|---|---|---|
+| 발주처 포털 | `/portal` | 토큰 입력 → 공사 현황 대시보드 (공정률·SPI·품질합격률·최근 일보) |
+
+---
+
 ## 법규 Q&A 기능 (RAG) 설정
 
 법규 Q&A를 사용하려면 먼저 Supabase에서 pgvector를 활성화하세요:
@@ -308,6 +349,12 @@ curl -X POST http://localhost:8000/api/v1/projects/{project_id}/agents/scenario/
 
 발주처에게 공사 현황 링크를 제공할 수 있습니다. 로그인 없이 토큰만으로 접근합니다.
 
+**웹 화면으로 사용:**
+1. 포털 토큰 발급 (아래 API 또는 Swagger UI)
+2. 발주처에게 URL + 토큰 전달: `http://내도메인/portal`
+3. 발주처가 접속 후 토큰 입력 → 공정률·품질·일보 실시간 확인
+
+**API로 사용:**
 ```bash
 # 포털 토큰 발급 (현장 관리자가 실행)
 curl -X POST http://localhost:8000/api/v1/portal/tokens \
@@ -396,7 +443,24 @@ convai/
 │
 ├── frontend/                     # Next.js 웹 대시보드
 │   └── src/
-│       ├── app/                  # 페이지 (11개)
+│       ├── app/                  # 페이지 (16개)
+│       │   ├── login/            # 로그인
+│       │   ├── dashboard/        # 메인 대시보드
+│       │   ├── projects/         # 프로젝트 목록
+│       │   ├── projects/[id]/    # 프로젝트 상세
+│       │   │   ├── gantt/        # 공정표
+│       │   │   ├── reports/      # 일보·보고서
+│       │   │   ├── inspections/  # 검측
+│       │   │   ├── quality/      # 품질시험
+│       │   │   ├── weather/      # 날씨 경보
+│       │   │   ├── permits/      # 인허가
+│       │   │   ├── agents/       # AI 에이전트 채팅
+│       │   │   ├── evms/         # EVMS 대시보드
+│       │   │   ├── vision/       # Vision AI
+│       │   │   └── completion/   # 준공도서 패키지
+│       │   ├── rag/              # 법규 Q&A
+│       │   ├── settings/         # 설정
+│       │   └── portal/           # 발주처 포털
 │       ├── components/           # UI 컴포넌트
 │       ├── hooks/                # React 훅
 │       └── lib/                  # API 클라이언트·타입·유틸
