@@ -146,7 +146,7 @@ function WorkTypesTab() {
                       <span>
                         {wt.weather_constraints.min_temp != null && `최저 ${wt.weather_constraints.min_temp}°C`}
                         {wt.weather_constraints.max_wind != null && ` 최대 ${wt.weather_constraints.max_wind}m/s`}
-                        {wt.weather_constraints.no_rain && " 우천불가"}
+                        {wt.weather_constraints.no_rain ? " 우천불가" : ""}
                       </span>
                     ) : "-"}
                   </td>

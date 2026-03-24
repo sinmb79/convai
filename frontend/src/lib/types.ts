@@ -191,3 +191,87 @@ export interface RagAnswer {
   sources: RagSource[];
   disclaimer: string;
 }
+
+// Phase 2~3 types
+
+export type AgentType = "gongsa" | "pumjil" | "anjeon" | "gumu";
+export type ConversationStatus = "active" | "archived";
+
+export interface AgentConversation {
+  id: string;
+  agent_type: AgentType;
+  title: string | null;
+  status: ConversationStatus;
+  message_count: number;
+}
+
+export interface AgentMessage {
+  id: string;
+  conversation_id: string;
+  role: "user" | "assistant";
+  content: string;
+  is_proactive: boolean;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface EVMSSnapshot {
+  id: string;
+  project_id: string;
+  snapshot_date: string;
+  planned_progress: number;
+  actual_progress: number;
+  pv: number;
+  ev: number;
+  ac: number;
+  spi: number;
+  cpi: number;
+  eac: number;
+  etc: number;
+}
+
+export interface EVMSChart {
+  labels: string[];
+  planned: number[];
+  actual: number[];
+  spi: number[];
+}
+
+export interface VisionClassifyResult {
+  work_type: string;
+  confidence: string;
+  tags: string[];
+  description: string;
+}
+
+export interface VisionSafetyResult {
+  helmet: boolean;
+  vest: boolean;
+  violations: string[];
+  risk_level: string;
+  recommendation: string;
+}
+
+export interface VisionDrawingResult {
+  matches: string[];
+  discrepancies: string[];
+  overall_match: string;
+  recommendation: string;
+}
+
+export interface CompletionChecklist {
+  category: string;
+  item: string;
+  available: boolean;
+  count?: number;
+}
+
+export interface GeofenceZone {
+  id: string;
+  project_id: string;
+  name: string;
+  zone_type: string;
+  polygon_coords: Array<{ lat: number; lng: number }>;
+  alert_message: string | null;
+  is_active: boolean;
+  created_at: string;
+}

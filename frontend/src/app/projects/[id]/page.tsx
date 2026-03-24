@@ -14,6 +14,10 @@ const TABS = [
   { id: "quality", label: "✅ 품질시험", href: (id: string) => `/projects/${id}/quality` },
   { id: "weather", label: "🌤 날씨", href: (id: string) => `/projects/${id}/weather` },
   { id: "permits", label: "🏛 인허가", href: (id: string) => `/projects/${id}/permits` },
+  { id: "agents", label: "🤖 AI 에이전트", href: (id: string) => `/projects/${id}/agents` },
+  { id: "evms", label: "📊 EVMS", href: (id: string) => `/projects/${id}/evms` },
+  { id: "vision", label: "👁 Vision AI", href: (id: string) => `/projects/${id}/vision` },
+  { id: "completion", label: "📦 준공도서", href: (id: string) => `/projects/${id}/completion` },
 ];
 
 export default function ProjectDetailPage() {
@@ -60,7 +64,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Module Tabs */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           {TABS.map((tab) => (
             <Link
               key={tab.id}
