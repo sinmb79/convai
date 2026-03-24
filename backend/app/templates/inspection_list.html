@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; font-size: 10pt; color: #111; padding: 15mm; }
+  h1 { text-align: center; font-size: 16pt; font-weight: 700; margin-bottom: 6mm; }
+  .meta { text-align: center; color: #555; margin-bottom: 6mm; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 2mm 3mm; font-size: 9pt; }
+  th { background: #1e3a5f; color: white; text-align: center; }
+  tr:nth-child(even) td { background: #f8f8f8; }
+  .footer { margin-top: 6mm; text-align: right; font-size: 9pt; color: #777; }
+</style>
+</head>
+<body>
+  <h1>검측 이력</h1>
+  <div class="meta">{{ project.name }} | 생성일: {{ today }} | 총 {{ inspections|length }}건</div>
+  <table>
+    <tr><th>No.</th><th>요청일</th><th>검측 항목</th><th>위치</th><th>상태</th><th>결과</th><th>검측자</th></tr>
+    {% for insp in inspections %}
+    <tr>
+      <td style="text-align:center">{{ loop.index }}</td>
+      <td>{{ insp.requested_date }}</td>
+      <td>{{ insp.inspection_type }}</td>
+      <td>{{ insp.location_detail or '-' }}</td>
+      <td style="text-align:center">
+        {% if insp.status.value == 'completed' %}완료
+        {% elif insp.status.value == 'sent' %}발송됨
+        {% else %}초안{% endif %}
+      </td>
+      <td style="text-align:center">
+        {% if insp.result %}
+          {% if insp.result.value == 'pass' %}합격
+          {% elif insp.result.value == 'fail' %}불합격
+          {% else %}조건부{% endif %}
+        {% else %}-{% endif %}
+      </td>
+      <td>{{ insp.inspector_name or '-' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div class="footer">CONAI 자동 생성</div>
+</body>
+</html>

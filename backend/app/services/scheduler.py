@@ -8,6 +8,7 @@ from datetime import date, datetime
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
@@ -115,6 +116,89 @@ async def _collect_weather_for_all_projects():
         logger.info("날씨 수집 완료")
 
 
+async def _daily_evms_snapshot():
+    """매일 자정 활성 프로젝트 EVMS 스냅샷 자동 저장"""
+    from app.services.evms_service import compute_evms
+    from app.models.evms import EVMSSnapshot
+
+    today = date.today()
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Project).where(Project.status == "active"))
+        projects = result.scalars().all()
+        for project in projects:
+            try:
+                data = await compute_evms(db, project.id, today)
+                snap = EVMSSnapshot(
+                    project_id=project.id,
+                    snapshot_date=today,
+                    total_budget=data["total_budget"],
+                    planned_progress=data["planned_progress"],
+                    actual_progress=data["actual_progress"],
+                    pv=data["pv"], ev=data["ev"], ac=data["ac"],
+                    spi=data["spi"], cpi=data["cpi"],
+                    eac=data["eac"], etc=data["etc"],
+                    detail_json={"tasks": data["detail"]},
+                )
+                db.add(snap)
+            except Exception as e:
+                logger.error(f"EVMS 스냅샷 실패 [{project.id}]: {e}")
+        await db.commit()
+    logger.info(f"EVMS 일일 스냅샷 완료: {len(projects)}개 프로젝트")
+
+
+async def _morning_agent_briefings():
+    """매일 오전 7시 GONGSA 아침 브리핑 자동 생성"""
+    from app.models.agent import AgentConversation, AgentMessage, AgentType
+    from app.models.user import User
+    from app.services.agents.gongsa import gongsa_agent
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Project).where(Project.status == "active"))
+        projects = result.scalars().all()
+
+        for project in projects:
+            try:
+                # 프로젝트 관리자 조회 (첫 번째 admin)
+                user_r = await db.execute(
+                    select(User).where(User.role == "site_manager").limit(1)
+                )
+                user = user_r.scalar_one_or_none()
+                if not user:
+                    continue
+
+                context = await gongsa_agent.build_context(db, str(project.id))
+                prompt = (
+                    f"오늘({context.get('today', str(date.today()))}) 아침 공정 브리핑을 작성해주세요. "
+                    "날씨, 오늘 예정 공종, 주의사항을 포함해주세요."
+                )
+                reply = await gongsa_agent.chat(
+                    messages=[{"role": "user", "content": prompt}],
+                    context=context,
+                )
+
+                conv = AgentConversation(
+                    project_id=project.id,
+                    user_id=user.id,
+                    agent_type=AgentType.GONGSA,
+                    title=f"{date.today()} 아침 브리핑 (자동)",
+                )
+                db.add(conv)
+                await db.flush()
+
+                msg = AgentMessage(
+                    conversation_id=conv.id,
+                    role="assistant",
+                    content=reply,
+                    is_proactive=True,
+                )
+                db.add(msg)
+            except Exception as e:
+                logger.error(f"아침 브리핑 실패 [{project.id}]: {e}")
+
+        await db.commit()
+    logger.info("아침 브리핑 자동 생성 완료")
+
+
 def start_scheduler():
     """FastAPI 시작 시 스케줄러를 초기화하고 시작합니다."""
     global _scheduler
@@ -127,11 +211,31 @@ def start_scheduler():
         id="weather_collect",
         name="날씨 데이터 자동 수집",
         replace_existing=True,
-        misfire_grace_time=300,  # 5분 내 누락 허용
+        misfire_grace_time=300,
+    )
+
+    # 매일 자정 EVMS 스냅샷
+    _scheduler.add_job(
+        _daily_evms_snapshot,
+        trigger=CronTrigger(hour=0, minute=5),
+        id="evms_daily",
+        name="EVMS 일일 스냅샷",
+        replace_existing=True,
+        misfire_grace_time=600,
+    )
+
+    # 매일 오전 7시 아침 브리핑
+    _scheduler.add_job(
+        _morning_agent_briefings,
+        trigger=CronTrigger(hour=7, minute=0),
+        id="morning_briefing",
+        name="GONGSA 아침 브리핑 자동 생성",
+        replace_existing=True,
+        misfire_grace_time=600,
     )
 
     _scheduler.start()
-    logger.info("APScheduler 시작: 날씨 수집 3시간 주기")
+    logger.info("APScheduler 시작: 날씨(3h), EVMS 스냅샷(00:05), 아침 브리핑(07:00)")
     return _scheduler
 
 

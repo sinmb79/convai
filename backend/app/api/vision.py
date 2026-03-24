@@ -9,9 +9,11 @@ from sqlalchemy import select
 from app.deps import CurrentUser, DB
 from app.models.project import Project
 from app.models.daily_report import DailyReport, DailyReportPhoto
-from app.services.vision_service import classify_photo, analyze_safety
+from app.services.vision_service import classify_photo, analyze_safety, compare_with_drawing
 
 router = APIRouter(prefix="/projects/{project_id}/vision", tags=["Vision AI"])
+
+COMPARISON_TYPES = {"rebar": "철근 배근", "formwork": "거푸집", "general": "일반 비교"}
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
 MAX_SIZE_MB = 10
@@ -88,6 +90,41 @@ async def classify_field_photo(
             await db.commit()
             result["attached_to_report"] = str(daily_report_id)
 
+    return JSONResponse(content=result)
+
+
+@router.post("/compare-drawing")
+async def compare_drawing(
+    project_id: uuid.UUID,
+    db: DB,
+    current_user: CurrentUser,
+    field_photo: UploadFile = File(..., description="현장 사진"),
+    drawing: UploadFile = File(..., description="설계 도면 이미지"),
+    comparison_type: str = Form("rebar", description="rebar/formwork/general"),
+):
+    """
+    Vision AI Level 3 — 설계 도면 vs 현장 사진 비교 보조 판독
+    철근 배근, 거푸집 치수 등을 도면과 1차 비교합니다.
+    ⚠️ 최종 합격/불합격 판정은 현장 책임자가 합니다.
+    """
+    await _get_project_or_404(project_id, db)
+
+    if comparison_type not in COMPARISON_TYPES:
+        raise HTTPException(status_code=400, detail=f"comparison_type은 {list(COMPARISON_TYPES.keys())} 중 하나여야 합니다")
+
+    field_data   = await field_photo.read()
+    drawing_data = await drawing.read()
+
+    if len(field_data) > MAX_SIZE_MB * 1024 * 1024 or len(drawing_data) > MAX_SIZE_MB * 1024 * 1024:
+        raise HTTPException(status_code=400, detail=f"파일 크기가 {MAX_SIZE_MB}MB를 초과합니다")
+
+    result = await compare_with_drawing(
+        field_photo=field_data,
+        drawing_image=drawing_data,
+        comparison_type=comparison_type,
+        field_media_type=field_photo.content_type or "image/jpeg",
+        drawing_media_type=drawing.content_type or "image/jpeg",
+    )
     return JSONResponse(content=result)
 
 

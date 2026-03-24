@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; font-size: 11pt; color: #111; padding: 20mm; }
+  h1 { text-align: center; font-size: 20pt; font-weight: 700; margin-bottom: 2mm; }
+  h2 { font-size: 14pt; font-weight: 700; background: #1e3a5f; color: white; padding: 3mm 5mm; margin: 6mm 0 3mm; }
+  .subtitle { text-align: center; font-size: 12pt; color: #444; margin-bottom: 10mm; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 5mm; }
+  th, td { border: 1px solid #888; padding: 3mm 4mm; }
+  th { background: #f0f0f0; font-weight: 700; text-align: center; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; margin-bottom: 6mm; }
+  .stat-card { border: 2px solid #1e3a5f; border-radius: 4px; padding: 4mm; text-align: center; }
+  .stat-num { font-size: 22pt; font-weight: 700; color: #1e3a5f; }
+  .stat-label { font-size: 9pt; color: #666; margin-top: 1mm; }
+  .badge-pass { color: #065f46; background: #d1fae5; padding: 1mm 3mm; border-radius: 3px; font-size: 9pt; }
+  .badge-fail { color: #991b1b; background: #fee2e2; padding: 1mm 3mm; border-radius: 3px; font-size: 9pt; }
+  .footer { margin-top: 10mm; text-align: right; font-size: 10pt; color: #777; border-top: 1px solid #ccc; padding-top: 3mm; }
+</style>
+</head>
+<body>
+  <h1>준 공 도 서</h1>
+  <div class="subtitle">{{ project.name }}</div>
+
+  <table>
+    <tr><th>공사명</th><td colspan="3">{{ project.name }}</td></tr>
+    <tr>
+      <th>공사 기간</th>
+      <td>{{ project.start_date or '-' }} ~ {{ project.end_date or '-' }}</td>
+      <th>공사 금액</th>
+      <td>{{ "{:,.0f}".format(project.contract_amount) if project.contract_amount else '-' }}원</td>
+    </tr>
+    <tr><th>생성일</th><td colspan="3">{{ today }}</td></tr>
+  </table>
+
+  <h2>▶ 공사 실적 요약</h2>
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-num">{{ total_dr }}</div>
+      <div class="stat-label">작업일보 (건)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ total_qt }}</div>
+      <div class="stat-label">품질시험 (건)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ pass_rate }}%</div>
+      <div class="stat-label">품질 합격률</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ total_insp }}</div>
+      <div class="stat-label">검측 (건)</div>
+    </div>
+  </div>
+
+  <h2>▶ 인허가 취득 현황</h2>
+  <table>
+    <tr><th>구분</th><th>전체</th><th>취득 완료</th><th>취득률</th></tr>
+    <tr>
+      <td>인허가 항목</td>
+      <td style="text-align:center">{{ total_permits }}</td>
+      <td style="text-align:center">{{ approved_permits }}</td>
+      <td style="text-align:center">
+        {{ "%.0f"|format(approved_permits / total_permits * 100) if total_permits else 0 }}%
+      </td>
+    </tr>
+  </table>
+
+  {% if quality_tests %}
+  <h2>▶ 최근 품질시험 ({{ quality_tests|length }}건)</h2>
+  <table>
+    <tr><th>일자</th><th>시험 항목</th><th>측정값</th><th>결과</th></tr>
+    {% for qt in quality_tests %}
+    <tr>
+      <td>{{ qt.test_date }}</td>
+      <td>{{ qt.test_type }}</td>
+      <td style="text-align:right">{{ qt.measured_value }} {{ qt.unit }}</td>
+      <td style="text-align:center">
+        {% if qt.result.value == 'pass' %}
+          <span class="badge-pass">합격</span>
+        {% else %}
+          <span class="badge-fail">불합격</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <div class="footer">
+    본 준공도서는 CONAI 시스템에서 자동 생성되었습니다. | 생성일시: {{ today }}
+  </div>
+</body>
+</html>

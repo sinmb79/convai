@@ -114,6 +114,63 @@ async def classify_photo(
     return result
 
 
+async def compare_with_drawing(
+    field_photo: bytes,
+    drawing_image: bytes,
+    comparison_type: str = "rebar",
+    field_media_type: str = "image/jpeg",
+    drawing_media_type: str = "image/jpeg",
+) -> dict:
+    """
+    Vision AI Level 3 — 설계 도면 vs 현장 사진 비교 (고난도 보조 판독)
+    comparison_type: rebar(철근배근), formwork(거푸집), general(일반)
+    최종 합격/불합격 판정은 현장 책임자가 합니다.
+    """
+    field_b64   = base64.standard_b64encode(field_photo).decode()
+    drawing_b64 = base64.standard_b64encode(drawing_image).decode()
+
+    type_prompts = {
+        "rebar": "철근 배근 간격·직경·이음 방법을 도면과 비교해주세요.",
+        "formwork": "거푸집 치수·형태·지지 방법을 도면과 비교해주세요.",
+        "general": "현장 시공 상태를 도면과 전반적으로 비교해주세요.",
+    }
+    specific = type_prompts.get(comparison_type, type_prompts["general"])
+
+    prompt = f"""왼쪽은 설계 도면, 오른쪽은 현장 사진입니다.
+{specific}
+
+다음 JSON 형식으로만 응답하세요:
+{{
+  "comparison_type": "{comparison_type}",
+  "conformances": ["도면과 일치하는 항목"],
+  "discrepancies": ["불일치 또는 확인 필요 항목"],
+  "risk_level": "저/중/고",
+  "recommendation": "현장 책임자에게 전달할 권고사항",
+  "confidence": 0.7,
+  "disclaimer": "이 결과는 AI 1차 보조 판독이며 최종 판정은 현장 책임자가 합니다."
+}}"""
+
+    response = await _client.messages.create(
+        model=settings.CLAUDE_MODEL,
+        max_tokens=1024,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": drawing_media_type, "data": drawing_b64}},
+                {"type": "image", "source": {"type": "base64", "media_type": field_media_type,   "data": field_b64}},
+                {"type": "text", "text": prompt},
+            ],
+        }],
+    )
+
+    raw = response.content[0].text.strip()
+    import json, re
+    json_match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if json_match:
+        return json.loads(json_match.group())
+    return {"error": "분석 실패", "raw": raw[:200]}
+
+
 async def analyze_safety(
     image_data: bytes,
     media_type: str = "image/jpeg",

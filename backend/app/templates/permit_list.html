@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; font-size: 10pt; color: #111; padding: 15mm; }
+  h1 { text-align: center; font-size: 16pt; font-weight: 700; margin-bottom: 6mm; }
+  .meta { text-align: center; color: #555; margin-bottom: 6mm; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 2mm 3mm; font-size: 9pt; }
+  th { background: #1e3a5f; color: white; text-align: center; }
+  tr:nth-child(even) td { background: #f8f8f8; }
+  .approved { color: #065f46; font-weight: 700; }
+  .pending  { color: #92400e; }
+  .footer { margin-top: 6mm; text-align: right; font-size: 9pt; color: #777; }
+</style>
+</head>
+<body>
+  <h1>인허가 취득 현황</h1>
+  <div class="meta">{{ project.name }} | 생성일: {{ today }} | 총 {{ permits|length }}건</div>
+  <table>
+    <tr><th>No.</th><th>인허가 항목</th><th>관할 기관</th><th>기한</th><th>제출일</th><th>취득일</th><th>상태</th></tr>
+    {% for p in permits %}
+    <tr>
+      <td style="text-align:center">{{ loop.index }}</td>
+      <td>{{ p.permit_type }}</td>
+      <td>{{ p.authority or '-' }}</td>
+      <td>{{ p.deadline or '-' }}</td>
+      <td>{{ p.submitted_date or '-' }}</td>
+      <td>{{ p.approved_date or '-' }}</td>
+      <td style="text-align:center">
+        {% if p.status.value == 'approved' %}<span class="approved">취득 완료</span>
+        {% elif p.status.value == 'submitted' %}<span class="pending">제출됨</span>
+        {% elif p.status.value == 'in_progress' %}<span class="pending">진행중</span>
+        {% else %}대기{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div class="footer">CONAI 자동 생성</div>
+</body>
+</html>

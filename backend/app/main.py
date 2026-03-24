@@ -5,7 +5,7 @@ from app.config import settings
 from app.api import (
     auth, projects, tasks, daily_reports, reports, inspections,
     weather, rag, kakao, permits, quality, settings as settings_router,
-    agents, evms, vision, geofence,
+    agents, evms, vision, geofence, completion, documents, portal,
 )
 from app.services.scheduler import start_scheduler, stop_scheduler
 
@@ -53,6 +53,9 @@ def create_app() -> FastAPI:
     app.include_router(evms.router, prefix=api_prefix)
     app.include_router(vision.router, prefix=api_prefix)
     app.include_router(geofence.router, prefix=api_prefix)
+    app.include_router(completion.router, prefix=api_prefix)
+    app.include_router(documents.router, prefix=api_prefix)
+    app.include_router(portal.router, prefix=api_prefix)
     app.include_router(settings_router.router, prefix=api_prefix)
 
     @app.get("/health")

@@ -1,13 +1,69 @@
 """
-EVMS (Earned Value Management System) 계산 서비스
-PV, EV, AC, SPI, CPI 산출
+EVMS (Earned Value Management System) — Phase 3 완전 자동화
+PV, EV, AC, SPI, CPI 산출 + 공정 지연 예측 AI + 기성청구 자동 알림
 """
-from datetime import date
+from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.task import Task
 from app.models.project import Project
+
+
+async def predict_delay(
+    db: AsyncSession,
+    project_id,
+    spi: float,
+    planned_end: date | None,
+    snapshot_date: date,
+) -> dict:
+    """
+    SPI 기반 공기 지연 예측.
+    spi < 1 이면 지연, 남은 기간을 SPI로 나눠 예상 준공일 계산.
+    """
+    if not planned_end or spi is None or spi <= 0:
+        return {"delay_days": None, "predicted_end": None, "status": "예측 불가"}
+
+    remaining_days = (planned_end - snapshot_date).days
+    if remaining_days <= 0:
+        return {"delay_days": 0, "predicted_end": str(planned_end), "status": "준공 예정일 경과"}
+
+    predicted_remaining = remaining_days / spi
+    predicted_end = snapshot_date + timedelta(days=int(predicted_remaining))
+    delay_days = (predicted_end - planned_end).days
+
+    if delay_days > 0:
+        status = f"{delay_days}일 지연 예상"
+    elif delay_days < -3:
+        status = f"{abs(delay_days)}일 조기 준공 예상"
+    else:
+        status = "정상 진행"
+
+    return {
+        "delay_days": delay_days,
+        "predicted_end": str(predicted_end),
+        "status": status,
+    }
+
+
+async def compute_progress_claim(
+    total_budget: float,
+    actual_progress: float,
+    already_claimed_pct: float = 0.0,
+) -> dict:
+    """
+    기성청구 가능 금액 산출.
+    기성청구 가능 금액 = 총예산 × (실제 공정률 - 기청구 공정률)
+    """
+    claimable_pct = max(0.0, actual_progress - already_claimed_pct)
+    claimable_amount = total_budget * (claimable_pct / 100)
+    return {
+        "actual_progress": actual_progress,
+        "already_claimed_pct": already_claimed_pct,
+        "claimable_pct": round(claimable_pct, 1),
+        "claimable_amount": round(claimable_amount, 0),
+        "claimable_amount_formatted": f"{claimable_amount:,.0f}원",
+    }
 
 
 def _clamp(v: float, lo: float, hi: float) -> float:

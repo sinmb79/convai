@@ -16,6 +16,7 @@ from app.deps import CurrentUser, DB
 from app.models.agent import AgentConversation, AgentMessage, AgentType, ConversationStatus
 from app.models.project import Project
 from app.services.agents.router import get_agent, route_by_keyword
+from app.services.agents.collaboration import run_scenario, SCENARIO_AGENTS
 
 router = APIRouter(prefix="/projects/{project_id}/agents", tags=["AI 에이전트"])
 
@@ -265,6 +266,32 @@ async def morning_briefing(
     await db.commit()
     await db.refresh(msg)
     return msg
+
+
+@router.post("/scenario/{scenario_name}")
+async def run_collaboration_scenario(
+    project_id: uuid.UUID,
+    scenario_name: str,
+    db: DB,
+    current_user: CurrentUser,
+):
+    """
+    에이전트 협업 시나리오 실행 (Phase 3).
+    복수 에이전트가 순차적으로 하나의 현장 상황을 처리합니다.
+
+    사용 가능 시나리오:
+    - concrete_pour: 콘크리트 타설 (GONGSA → PUMJIL → ANJEON)
+    - excavation: 굴착 작업 (GONGSA → ANJEON → PUMJIL)
+    - weekly_report: 주간 보고 (GONGSA → PUMJIL → GUMU)
+    """
+    if scenario_name not in SCENARIO_AGENTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"알 수 없는 시나리오. 가능한 값: {list(SCENARIO_AGENTS.keys())}",
+        )
+    await _get_project_or_404(project_id, db)
+    results = await run_scenario(db, project_id, current_user.id, scenario_name)
+    return {"scenario": scenario_name, "steps": results}
 
 
 @router.delete("/{conv_id}", status_code=status.HTTP_204_NO_CONTENT)
