@@ -9,6 +9,8 @@ from .weather import WeatherData, WeatherAlert
 from .permit import PermitItem
 from .rag import RagSource, RagChunk
 from .settings import ClientProfile, AlertRule, WorkTypeLibrary
+from .agent import AgentConversation, AgentMessage, GeofenceZone, AgentType
+from .evms import EVMSSnapshot
 
 __all__ = [
     "User",
@@ -22,4 +24,6 @@ __all__ = [
     "PermitItem",
     "RagSource", "RagChunk",
     "ClientProfile", "AlertRule", "WorkTypeLibrary",
+    "AgentConversation", "AgentMessage", "GeofenceZone", "AgentType",
+    "EVMSSnapshot",
 ]

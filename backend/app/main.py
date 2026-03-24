@@ -2,7 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
-from app.api import auth, projects, tasks, daily_reports, reports, inspections, weather, rag, kakao, permits, quality, settings as settings_router
+from app.api import (
+    auth, projects, tasks, daily_reports, reports, inspections,
+    weather, rag, kakao, permits, quality, settings as settings_router,
+    agents, evms, vision, geofence,
+)
 from app.services.scheduler import start_scheduler, stop_scheduler
 
 
@@ -45,6 +49,10 @@ def create_app() -> FastAPI:
     app.include_router(kakao.router, prefix=api_prefix)
     app.include_router(permits.router, prefix=api_prefix)
     app.include_router(quality.router, prefix=api_prefix)
+    app.include_router(agents.router, prefix=api_prefix)
+    app.include_router(evms.router, prefix=api_prefix)
+    app.include_router(vision.router, prefix=api_prefix)
+    app.include_router(geofence.router, prefix=api_prefix)
     app.include_router(settings_router.router, prefix=api_prefix)
 
     @app.get("/health")
