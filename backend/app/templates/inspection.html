@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; font-size: 11pt; color: #111; padding: 20mm; }
+  h1 { text-align: center; font-size: 18pt; font-weight: 700; margin-bottom: 8mm; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
+  th, td { border: 1px solid #888; padding: 3mm 4mm; vertical-align: middle; }
+  th { background: #f0f0f0; font-weight: 700; text-align: center; width: 28%; }
+  .section-title { font-size: 12pt; font-weight: 700; background: #e8e8e8; padding: 2mm 4mm; margin: 5mm 0 2mm; }
+  .checklist-item { display: flex; align-items: flex-start; padding: 2mm 0; border-bottom: 1px solid #ddd; }
+  .check-box { width: 6mm; height: 6mm; border: 1px solid #666; margin-right: 3mm; flex-shrink: 0; margin-top: 1mm; }
+  .check-num { color: #888; margin-right: 2mm; min-width: 8mm; }
+  .badge { display: inline-block; padding: 1mm 3mm; border-radius: 3px; font-size: 9pt; font-weight: 700; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+  .badge-conditional { background: #fef3c7; color: #92400e; }
+  .sign-area { display: flex; justify-content: flex-end; gap: 10mm; margin-top: 10mm; }
+  .sign-box { border: 1px solid #888; width: 35mm; text-align: center; }
+  .sign-box .title { background: #f0f0f0; padding: 2mm; border-bottom: 1px solid #888; font-size: 9pt; }
+  .sign-box .space { height: 15mm; }
+  .footer { margin-top: 8mm; text-align: right; font-size: 10pt; color: #555; }
+</style>
+</head>
+<body>
+  <h1>검 측 요 청 서</h1>
+
+  <table>
+    <tr><th>공사명</th><td colspan="3">{{ project.name }}</td></tr>
+    <tr>
+      <th>검측 항목</th>
+      <td>{{ inspection_type_label }}</td>
+      <th>요청일</th>
+      <td>{{ inspection.requested_date }}</td>
+    </tr>
+    <tr>
+      <th>위치 / 부위</th>
+      <td>{{ inspection.location_detail or '-' }}</td>
+      <th>결과</th>
+      <td>
+        {% if inspection.result %}
+          {% if inspection.result.value == 'pass' %}<span class="badge badge-pass">합격</span>
+          {% elif inspection.result.value == 'fail' %}<span class="badge badge-fail">불합격</span>
+          {% else %}<span class="badge badge-conditional">조건부합격</span>{% endif %}
+        {% else %}-{% endif %}
+      </td>
+    </tr>
+    {% if inspection.inspector_name %}
+    <tr><th>검측자</th><td colspan="3">{{ inspection.inspector_name }}</td></tr>
+    {% endif %}
+  </table>
+
+  {% if inspection.checklist_items %}
+  <div class="section-title">▶ 검측 체크리스트</div>
+  <table>
+    <tr><th style="width:8%">No.</th><th style="width:50%">검측 항목</th><th style="width:22%">기준값</th><th style="width:20%">확인</th></tr>
+    {% for item in inspection.checklist_items %}
+    <tr>
+      <td style="text-align:center">{{ loop.index }}</td>
+      <td>{{ item.get('item', item) if item is mapping else item }}</td>
+      <td>{{ item.get('standard', '') if item is mapping else '' }}</td>
+      <td style="text-align:center">□</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if inspection.notes %}
+  <div class="section-title">▶ 특이사항</div>
+  <table><tr><td style="white-space:pre-wrap">{{ inspection.notes }}</td></tr></table>
+  {% endif %}
+
+  <div class="sign-area">
+    <div class="sign-box">
+      <div class="title">현장대리인</div>
+      <div class="space"></div>
+      <div style="padding:2mm;font-size:9pt">(인)</div>
+    </div>
+    <div class="sign-box">
+      <div class="title">감독관</div>
+      <div class="space"></div>
+      <div style="padding:2mm;font-size:9pt">(인)</div>
+    </div>
+  </div>
+
+  <div class="footer">출력일시: {{ now }}{% if inspection.ai_generated %}&nbsp;&nbsp;AI 보조 작성{% endif %}</div>
+</body>
+</html>

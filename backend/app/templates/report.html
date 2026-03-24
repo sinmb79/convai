@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; font-size: 11pt; color: #111; padding: 20mm; }
+  h1 { text-align: center; font-size: 18pt; font-weight: 700; margin-bottom: 4mm; }
+  .subtitle { text-align: center; font-size: 11pt; color: #444; margin-bottom: 8mm; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
+  th, td { border: 1px solid #888; padding: 3mm 4mm; vertical-align: top; }
+  th { background: #f0f0f0; font-weight: 700; text-align: center; width: 25%; }
+  .section-title { font-size: 12pt; font-weight: 700; background: #e8e8e8; padding: 2mm 4mm; margin: 5mm 0 2mm; }
+  .content-block { border: 1px solid #ccc; padding: 4mm; min-height: 20mm; white-space: pre-wrap; line-height: 1.8; }
+  .footer { margin-top: 10mm; text-align: right; font-size: 10pt; color: #555; }
+</style>
+</head>
+<body>
+  <h1>{{ report_type_label }} 공정보고서</h1>
+  <div class="subtitle">{{ project.name }} &nbsp;|&nbsp; {{ period_label }}</div>
+
+  <table>
+    <tr><th>공사명</th><td colspan="3">{{ project.name }}</td></tr>
+    <tr>
+      <th>보고 기간</th><td>{{ period_label }}</td>
+      <th>상태</th><td>{{ status_label }}</td>
+    </tr>
+  </table>
+
+  {% if content_json %}
+    {% if content_json.get('work_summary') %}
+    <div class="section-title">▶ 주요 작업 내용</div>
+    <div class="content-block">{{ content_json.work_summary }}</div>
+    {% endif %}
+
+    {% if content_json.get('overall_progress') is not none %}
+    <div class="section-title">▶ 공정률</div>
+    <table><tr><th>종합 공정률</th><td>{{ content_json.overall_progress }}%</td></tr></table>
+    {% endif %}
+
+    {% if content_json.get('issues') %}
+    <div class="section-title">▶ 문제점 및 조치사항</div>
+    <div class="content-block">{{ content_json.issues }}</div>
+    {% endif %}
+
+    {% if content_json.get('next_plan') %}
+    <div class="section-title">▶ 다음 기간 예정 작업</div>
+    <div class="content-block">{{ content_json.next_plan }}</div>
+    {% endif %}
+  {% elif ai_draft_text %}
+    <div class="section-title">▶ AI 작성 보고서 초안</div>
+    <div class="content-block">{{ ai_draft_text }}</div>
+  {% endif %}
+
+  <div class="footer">출력일시: {{ now }}</div>
+</body>
+</html>

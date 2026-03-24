@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; font-size: 11pt; color: #111; padding: 20mm; }
+  h1 { text-align: center; font-size: 18pt; font-weight: 700; margin-bottom: 4mm; }
+  .subtitle { text-align: center; font-size: 11pt; margin-bottom: 8mm; color: #444; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
+  th, td { border: 1px solid #888; padding: 3mm 4mm; vertical-align: top; }
+  th { background: #f0f0f0; font-weight: 700; text-align: center; width: 28%; }
+  .section-title { font-size: 12pt; font-weight: 700; background: #e8e8e8; padding: 2mm 4mm; margin: 5mm 0 2mm; }
+  .workers-table th { width: auto; }
+  .footer { margin-top: 10mm; text-align: right; font-size: 10pt; color: #555; }
+  .badge { display: inline-block; padding: 1mm 3mm; border-radius: 3px; font-size: 9pt; font-weight: 700; }
+  .badge-draft { background: #fef3c7; color: #92400e; }
+  .badge-confirmed { background: #d1fae5; color: #065f46; }
+</style>
+</head>
+<body>
+  <h1>작 업 일 보</h1>
+  <div class="subtitle">{{ project.name }}</div>
+
+  <table>
+    <tr><th>공사명</th><td colspan="3">{{ project.name }}</td></tr>
+    <tr>
+      <th>일자</th><td>{{ report.report_date }}</td>
+      <th>날씨</th><td>{{ report.weather_summary or '-' }}</td>
+    </tr>
+    <tr>
+      <th>기온 (최고/최저)</th>
+      <td>{{ report.temperature_high }}°C / {{ report.temperature_low }}°C</td>
+      <th>상태</th>
+      <td>
+        {% if report.status.value == 'confirmed' %}
+          <span class="badge badge-confirmed">확인완료</span>
+        {% else %}
+          <span class="badge badge-draft">초안</span>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <div class="section-title">▶ 투입 인원</div>
+  {% if report.workers_count %}
+  <table class="workers-table">
+    <tr>
+      {% for key in report.workers_count %}<th>{{ key }}</th>{% endfor %}
+      <th>합계</th>
+    </tr>
+    <tr>
+      {% set total = namespace(n=0) %}
+      {% for key, val in report.workers_count.items() %}
+        <td style="text-align:center">{{ val }}명</td>
+        {% set total.n = total.n + val %}
+      {% endfor %}
+      <td style="text-align:center;font-weight:700">{{ total.n }}명</td>
+    </tr>
+  </table>
+  {% else %}
+  <table><tr><td style="color:#888">투입 인원 정보 없음</td></tr></table>
+  {% endif %}
+
+  {% if report.equipment_list %}
+  <div class="section-title">▶ 투입 장비</div>
+  <table>
+    <tr><th>장비명</th><th>규격</th><th>수량</th><th>비고</th></tr>
+    {% for eq in report.equipment_list %}
+    <tr>
+      <td>{{ eq.get('type', '-') }}</td>
+      <td>{{ eq.get('spec', '-') }}</td>
+      <td style="text-align:center">{{ eq.get('count', 1) }}대</td>
+      <td>{{ eq.get('notes', '') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <div class="section-title">▶ 작업 내용</div>
+  <table>
+    <tr><td style="min-height:30mm; white-space:pre-wrap">{{ report.work_content or '-' }}</td></tr>
+  </table>
+
+  {% if report.issues %}
+  <div class="section-title">▶ 특이사항 / 문제점</div>
+  <table>
+    <tr><td style="white-space:pre-wrap">{{ report.issues }}</td></tr>
+  </table>
+  {% endif %}
+
+  <div class="footer">
+    작성일시: {{ now }}&nbsp;&nbsp;&nbsp;
+    {% if report.ai_generated %}AI 보조 작성{% endif %}
+  </div>
+</body>
+</html>

@@ -1,6 +1,7 @@
 import uuid
 from datetime import date
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy import select, func
 from app.deps import CurrentUser, DB
 from app.models.report import Report, ReportType
@@ -9,6 +10,7 @@ from app.models.weather import WeatherAlert
 from app.models.project import Project
 from app.schemas.report import ReportGenerateRequest, ReportResponse
 from app.services.report_gen import generate_weekly_report, generate_monthly_report
+from app.services.pdf_service import generate_report_pdf
 
 router = APIRouter(prefix="/projects/{project_id}/reports", tags=["공정보고서"])
 
@@ -132,6 +134,20 @@ async def get_report(project_id: uuid.UUID, report_id: uuid.UUID, db: DB, curren
     if not report:
         raise HTTPException(status_code=404, detail="보고서를 찾을 수 없습니다")
     return report
+
+
+@router.get("/{report_id}/pdf")
+async def download_report_pdf(project_id: uuid.UUID, report_id: uuid.UUID, db: DB, current_user: CurrentUser):
+    """공정보고서 PDF 다운로드"""
+    r = await db.execute(select(Report).where(Report.id == report_id, Report.project_id == project_id))
+    report = r.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="보고서를 찾을 수 없습니다")
+    project = await _get_project_or_404(project_id, db)
+    pdf_bytes = generate_report_pdf(report, project)
+    filename = f"report_{report.report_type.value}_{report.period_start}.pdf"
+    return Response(content=pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"})
 
 
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)

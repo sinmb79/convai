@@ -1,6 +1,7 @@
 import uuid
 from datetime import date
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy import select
 from app.deps import CurrentUser, DB
 from app.models.daily_report import DailyReport, InputSource
@@ -9,6 +10,7 @@ from app.schemas.daily_report import (
     DailyReportCreate, DailyReportUpdate, DailyReportGenerateRequest, DailyReportResponse
 )
 from app.services.daily_report_gen import generate_work_content
+from app.services.pdf_service import generate_daily_report_pdf
 
 router = APIRouter(prefix="/projects/{project_id}/daily-reports", tags=["작업일보"])
 
@@ -95,6 +97,20 @@ async def update_report(project_id: uuid.UUID, report_id: uuid.UUID, data: Daily
     await db.commit()
     await db.refresh(report)
     return report
+
+
+@router.get("/{report_id}/pdf")
+async def download_report_pdf(project_id: uuid.UUID, report_id: uuid.UUID, db: DB, current_user: CurrentUser):
+    """작업일보 PDF 다운로드"""
+    r = await db.execute(select(DailyReport).where(DailyReport.id == report_id, DailyReport.project_id == project_id))
+    report = r.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="일보를 찾을 수 없습니다")
+    project = await _get_project_or_404(project_id, db)
+    pdf_bytes = generate_daily_report_pdf(report, project)
+    filename = f"daily_report_{report.report_date}.pdf"
+    return Response(content=pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"})
 
 
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)

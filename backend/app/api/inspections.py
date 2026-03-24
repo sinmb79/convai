@@ -1,11 +1,13 @@
 import uuid
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy import select
 from app.deps import CurrentUser, DB
 from app.models.inspection import InspectionRequest
 from app.models.project import Project, WBSItem
 from app.schemas.inspection import InspectionCreate, InspectionUpdate, InspectionGenerateRequest, InspectionResponse
 from app.services.inspection_gen import generate_checklist
+from app.services.pdf_service import generate_inspection_pdf
 
 router = APIRouter(prefix="/projects/{project_id}/inspections", tags=["검측요청서"])
 
@@ -94,6 +96,20 @@ async def update_inspection(project_id: uuid.UUID, inspection_id: uuid.UUID, dat
     await db.commit()
     await db.refresh(insp)
     return insp
+
+
+@router.get("/{inspection_id}/pdf")
+async def download_inspection_pdf(project_id: uuid.UUID, inspection_id: uuid.UUID, db: DB, current_user: CurrentUser):
+    """검측요청서 PDF 다운로드"""
+    r = await db.execute(select(InspectionRequest).where(InspectionRequest.id == inspection_id, InspectionRequest.project_id == project_id))
+    insp = r.scalar_one_or_none()
+    if not insp:
+        raise HTTPException(status_code=404, detail="검측요청서를 찾을 수 없습니다")
+    project = await _get_project_or_404(project_id, db)
+    pdf_bytes = generate_inspection_pdf(insp, project)
+    filename = f"inspection_{insp.requested_date}_{insp.inspection_type}.pdf"
+    return Response(content=pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"})
 
 
 @router.delete("/{inspection_id}", status_code=status.HTTP_204_NO_CONTENT)
