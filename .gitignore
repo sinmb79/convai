@@ -1,0 +1,72 @@
+# ============================
+# 보안 민감 파일 (절대 커밋 금지)
+# ============================
+.env
+.env.local
+.env.production
+.env.staging
+.env.*.local
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# ============================
+# Python
+# ============================
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+*.pyc
+
+# ============================
+# Node.js / Next.js
+# ============================
+node_modules/
+.next/
+out/
+.npm
+.yarn
+
+# ============================
+# IDE
+# ============================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# ============================
+# OS
+# ============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================
+# 빌드/로그
+# ============================
+*.log
+logs/
+dist/
+*.sqlite3
+*.db
+
+# ============================
+# 업로드된 파일 (운영 환경)
+# ============================
+uploads/
+media/

@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "conai-backend"
+version = "1.0.0"
+description = "CONAI - Construction AI Platform Backend"
+requires-python = ">=3.11"
+dependencies = [
+    # Web framework
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    # Database
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14.0",
+    "asyncpg>=0.30.0",
+    "psycopg2-binary>=2.9.10",
+    # Supabase
+    "supabase>=2.10.0",
+    # Auth
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.20",
+    # AI
+    "anthropic>=0.40.0",
+    # Config
+    "pydantic-settings>=2.6.0",
+    "pydantic>=2.10.0",
+    # HTTP
+    "httpx>=0.28.0",
+    # PDF
+    "weasyprint>=64.0",
+    "jinja2>=3.1.4",
+    # Excel
+    "openpyxl>=3.1.5",
+    # Scheduling
+    "apscheduler>=3.10.4",
+    # Storage
+    "boto3>=1.35.0",
+    # Utilities
+    "python-dateutil>=2.9.0",
+    "pytz>=2024.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.28.0",
+    "pytest-cov>=6.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
